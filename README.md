@@ -1,279 +1,316 @@
-# 🌍 GDELT CAMEO Realtime ETL Pipeline
+# 🌍 GDELT CAMEO — Real-Time Geopolitical Event ETL Pipeline
 
-<div align="center">
-
-![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.7.1-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Airflow](https://img.shields.io/badge/Apache%20Airflow-2.7.1-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-Latest-F46800?style=for-the-badge&logo=grafana&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Podman](https://img.shields.io/badge/Podman-Container-892CA0?style=for-the-badge&logo=podman&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-ETL-150458?style=for-the-badge&logo=pandas&logoColor=white)
 
-**Realtime ETL pipeline yang mengekstrak data geopolitik global dari GDELT Project, mentransformasi kode CAMEO, dan memuat ke PostgreSQL — dijalankan otomatis setiap 15 menit via Apache Airflow.**
-
-</div>
+> **Pipeline ETL end-to-end** yang mengambil data event geopolitik dunia dari **GDELT Project** secara real-time setiap 15 menit, mentransformasinya, lalu menyimpannya ke **PostgreSQL** dan memvisualisasikannya di **Grafana**.
 
 ---
 
-## 📖 Deskripsi Proyek
+## 📌 Daftar Isi
 
-**GDELT (Global Database of Events, Language, and Tone)** adalah dataset publik yang merekam seluruh kejadian global berbasis media berita di seluruh dunia. Dataset ini diperbarui **setiap 15 menit** dan menggunakan standar kode **CAMEO (Conflict and Mediation Event Observations)** untuk mengklasifikasikan jenis interaksi antar aktor (negara, tokoh, organisasi).
+- [Gambaran Umum](#-gambaran-umum)
+- [Arsitektur Pipeline](#-arsitektur-pipeline)
+- [Tech Stack](#-tech-stack)
+- [Struktur Proyek](#-struktur-proyek)
+- [Prasyarat](#-prasyarat)
+- [Cara Menjalankan](#-cara-menjalankan)
+- [Konfigurasi Environment](#-konfigurasi-environment)
+- [Penjelasan Pipeline](#-penjelasan-pipeline)
+- [Akses Dashboard](#-akses-dashboard)
+- [Screenshot](#-screenshot)
+- [Pelajaran yang Dipetik](#-pelajaran-yang-dipetik)
+- [Kontak](#-kontak)
 
-Pipeline ini dirancang untuk keperluan analitik geopolitik realtime dengan alur:
+---
+
+## 🧭 Gambaran Umum
+
+**GDELT (Global Database of Events, Language, and Tone)** adalah database terbuka terbesar di dunia yang memantau peristiwa global dari berbagai sumber berita. Project ini membangun pipeline data otomatis yang:
+
+1. **Mengambil (Extract)** data terbaru dari GDELT API setiap 15 menit
+2. **Mentransformasi (Transform)** data mentah menjadi format bersih dengan kolom-kolom esensial
+3. **Memuat (Load)** data ke PostgreSQL sebagai data warehouse
+4. **Memvisualisasikan** insight melalui dashboard Grafana secara real-time
+
+### Mengapa Proyek Ini?
+
+Proyek ini mendemonstrasikan kemampuan seorang **Data Engineer** dalam:
+
+- Membangun pipeline ETL yang **terjadwal** dan **fault-tolerant**
+- Melakukan orkestrasi workflow dengan **Apache Airflow**
+- Mengelola infrastruktur data dengan **containerisasi** (Podman/Docker)
+- Merancang skema data warehouse di **PostgreSQL**
+- Membuat dashboard monitoring dengan **Grafana**
+
+---
+
+## 🏗 Arsitektur Pipeline
 
 ```
-GDELT API → Extract → Transform (CAMEO) → Load → PostgreSQL → Grafana Dashboard
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   GDELT API     │────▶│  Apache Airflow  │────▶│   PostgreSQL    │────▶│    Grafana       │
+│   (Data Source) │     │  (Orchestrator)  │     │  (Data Warehouse)│    │  (Visualization) │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │                       │                       │
+   Data mentah            Extract &               Penyimpanan            Dashboard
+   CSV terkompresi        Transform               terstruktur            real-time
+   (setiap 15 menit)     (Pandas)                 (SQL Schema)           (Monitoring)
 ```
 
-### 🎯 Tujuan Proyek
-- Membangun pipeline ETL otomatis berbasis event dari sumber data publik skala besar
-- Mendemonstrasikan kemampuan orkestrasi workflow dengan Apache Airflow
-- Menyediakan data siap analisis untuk monitoring eskalasi konflik global
-
----
-
-## 🏗️ Arsitektur
+### Alur Data
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Podman / Docker                       │
-│                                                             │
-│  ┌──────────────────┐    ┌──────────────────────────────┐  │
-│  │  Apache Airflow  │    │         PostgreSQL 13         │  │
-│  │  (Port 8080)     │───▶│  Schema: gdelt               │  │
-│  │                  │    │  Table:  gdelt_events         │  │
-│  │  DAG: runs every │    │  (Port 5432)                  │  │
-│  │  15 minutes      │    └──────────────┬───────────────┘  │
-│  └──────────────────┘                   │                   │
-│                                         ▼                   │
-│                              ┌─────────────────┐            │
-│                              │     Grafana      │            │
-│                              │  Dashboard       │            │
-│                              │  (Port 3000)     │            │
-│                              └─────────────────┘            │
-└─────────────────────────────────────────────────────────────┘
-         ▲
-         │ HTTP (ZIP/CSV)
-┌────────┴────────┐
-│  GDELT Project  │
-│  (Public API)   │
-│  Update: /15min │
-└─────────────────┘
+GDELT lastupdate.txt → Download ZIP → Ekstrak CSV → Transformasi (Pandas) → Load ke PostgreSQL → Visualisasi di Grafana
 ```
 
 ---
 
-## 🔄 Alur ETL Pipeline
+## 🛠 Tech Stack
 
-### 1. Extract
-- Mengambil URL file terbaru dari `http://data.gdeltproject.org/gdeltv2/lastupdate.txt`
-- Mengunduh file `.export.CSV.zip` dan mengekstraknya secara in-memory (tanpa menyimpan ke disk)
-
-### 2. Transform
-Memilih 10 kolom relevan dari 57+ kolom GDELT dan melakukan normalisasi:
-
-| Kolom Output | Kolom GDELT | Keterangan |
-|---|---|---|
-| `GlobalEventID` | Index 0 | ID unik event |
-| `Day` | Index 1 | Tanggal event (format: YYYY-MM-DD) |
-| `Actor1Name` | Index 6 | Nama aktor 1 |
-| `Actor1CountryCode` | Index 7 | Kode negara aktor 1 |
-| `Actor2Name` | Index 16 | Nama aktor 2 |
-| `Actor2CountryCode` | Index 17 | Kode negara aktor 2 |
-| `EventBaseCode` | Index 27 | Kode CAMEO (zero-padded) |
-| `GoldsteinScale` | Index 30 | Skala dampak (-10 hingga +10) |
-| `NumMentions` | Index 31 | Jumlah penyebutan di media |
-| `SOURCEURL` | Index 60 | URL sumber berita |
-
-### 3. Load
-- Memuat data bersih ke PostgreSQL menggunakan `COPY` command via `PostgresHook`
-- Target tabel: `gdelt.gdelt_events`
+| Komponen | Teknologi | Fungsi |
+|----------|-----------|--------|
+| **Orchestrator** | Apache Airflow 2.7.1 | Penjadwalan & orkestrasi pipeline ETL |
+| **Data Warehouse** | PostgreSQL 13 | Penyimpanan data terstruktur |
+| **Visualization** | Grafana | Dashboard monitoring & analisis |
+| **Container Runtime** | Podman (Docker-compatible) | Containerisasi seluruh infrastruktur |
+| **Bahasa** | Python 3.8+ | Scripting ETL (Pandas, Requests) |
+| **Data Source** | GDELT Project v2 | Sumber data event geopolitik global |
 
 ---
 
-## 🛠️ Tech Stack
-
-| Komponen | Teknologi | Peran |
-|---|---|---|
-| Orkestrasi | Apache Airflow 2.7.1 | Penjadwalan & monitoring pipeline |
-| Penyimpanan | PostgreSQL 13 | Data warehouse |
-| Visualisasi | Grafana | Dashboard analitik |
-| Transformasi | Python (Pandas) | ETL & data cleaning |
-| Container | Podman / Docker | Isolasi & deployment |
-| Sumber Data | GDELT Project v2 | Public event dataset |
-
----
-
-## 📁 Struktur Direktori
+## 📂 Struktur Proyek
 
 ```
 project2-gdeltcameo/
 ├── dags/
-│   └── gdelt_pipeline.py      # DAG utama: Extract, Transform, Load
-├── logs/                      # Log Airflow (auto-generated)
-├── plugins/                   # Custom Airflow plugins
-├── docker-compose.yml         # Definisi layanan (Airflow, Postgres, Grafana)
-├── .env                       # Konfigurasi environment (tidak di-commit)
-├── .gitignore
-└── README.md
+│   └── gdelt_pipeline.py      # DAG Airflow: logika ETL (extract, transform, load)
+├── logs/                       # Log eksekusi Airflow (auto-generated)
+├── plugins/                    # Plugin kustom Airflow (opsional)
+├── docker-compose.yml          # Definisi layanan: Airflow, PostgreSQL, Grafana
+├── .env                        # Variabel lingkungan (kredensial, konfigurasi)
+├── .gitignore                  # Daftar file/folder yang diabaikan Git
+└── README.md                   # Dokumentasi proyek (file ini)
 ```
 
 ---
 
-## ⚙️ Cara Menjalankan
+## ⚙ Prasyarat
 
-### Prasyarat
-- [Podman](https://podman.io/) atau [Docker](https://www.docker.com/) terinstall
-- `podman-compose` / `docker compose` tersedia
-- Python 3.x (opsional, untuk pengembangan lokal)
+Pastikan tools berikut sudah terinstall di mesin Anda:
+
+- **Podman** (atau Docker) — container runtime
+- **Podman Compose** (atau Docker Compose) — orkestrasi multi-container
+- **Git** — version control
+
+```bash
+# Cek instalasi
+podman --version
+podman-compose --version
+git --version
+```
+
+---
+
+## 🚀 Cara Menjalankan
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/<username>/project2-gdeltcameo.git
-cd project2-gdeltcameo
+git clone https://github.com/<username>/gdelt-cameo-realtime-etl-pipeline.git
+cd gdelt-cameo-realtime-etl-pipeline
 ```
 
 ### 2. Konfigurasi Environment
 
-Buat file `.env` berdasarkan template berikut:
+Buat file `.env` di root proyek:
 
 ```env
 # PostgreSQL
 POSTGRES_USER=airflow
-POSTGRES_PASSWORD=<your_password>
+POSTGRES_PASSWORD=air123
 POSTGRES_DB=airflow
 
 # Airflow
+AIRFLOW_ADMIN_USERNAME=admin
+AIRFLOW_ADMIN_PASSWORD=air1234
 AIRFLOW_UID=50000
 
 # Grafana
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=<your_password>
+GRAFANA_ADMIN_PASSWORD=air12345
 ```
 
-### 3. Jalankan Services
+### 3. Jalankan Semua Service
 
 ```bash
-# Menggunakan Podman
 podman-compose up -d
-
-# Atau menggunakan Docker
-docker compose up -d
 ```
 
-### 4. Akses Services
+### 4. Buat Schema & Tabel di PostgreSQL
 
-| Service | URL | Kredensial Default |
-|---|---|---|
-| Airflow Webserver | http://localhost:8080 | admin / air1234 |
-| Grafana Dashboard | http://localhost:3000 | admin / air12345 |
-| PostgreSQL | localhost:5432 | Lihat `.env` |
+Setelah semua container berjalan, masuk ke container PostgreSQL dan buat schema:
 
-### 5. Konfigurasi Koneksi Airflow
-
-Di Airflow UI, buat koneksi PostgreSQL:
-- **Connection ID**: `postgres_default`
-- **Host**: `postgres`
-- **Port**: `5432`
-- **Database**: nilai `POSTGRES_DB` dari `.env`
-- **Login/Password**: nilai dari `.env`
-
-### 6. Aktifkan DAG
-
-Di Airflow UI, aktifkan DAG `gdelt_cameo_pipeline`. Pipeline akan berjalan otomatis setiap **15 menit**.
-
----
-
-## 🗄️ Skema Database
+```bash
+podman exec -it <postgres_container_name> psql -U airflow -d airflow
+```
 
 ```sql
-CREATE TABLE IF NOT EXISTS gdelt_events (
-    globaleventid     TEXT,
-    sqldate           DATE,
-    actor1_name       TEXT,
-    actor1_country    TEXT,
-    actor2_name       TEXT,
-    actor2_country    TEXT,
-    cameo_code        TEXT,   -- Kode CAMEO (mis. "01" = Public Statement)
-    goldstein_scale   TEXT,   -- Skala -10 (konflik) hingga +10 (kooperatif)
-    num_mentions      TEXT,
-    source_url        TEXT
+CREATE SCHEMA IF NOT EXISTS gdelt;
+
+CREATE TABLE IF NOT EXISTS gdelt.gdelt_events (
+    globaleventid   BIGINT PRIMARY KEY,
+    sqldate         DATE,
+    actor1_name     VARCHAR(255),
+    actor1_country  VARCHAR(10),
+    actor2_name     VARCHAR(255),
+    actor2_country  VARCHAR(10),
+    cameo_code      VARCHAR(10),
+    goldstein_scale FLOAT,
+    num_mentions    INT,
+    source_url      TEXT
 );
 ```
 
-### Tentang Kode CAMEO
+### 5. Setup Airflow Connection
 
-Kode CAMEO mengklasifikasikan jenis interaksi geopolitik. Contoh:
+Buka Airflow UI di `http://localhost:8080`, lalu tambahkan connection PostgreSQL:
 
-| Kode | Kategori |
-|---|---|
-| 01 | Public Statement |
-| 05 | Appeal |
-| 10 | Demand |
-| 14 | Protest |
-| 18 | Assault |
-| 19 | Fight |
-| 20 | Use of Unconventional Mass Violence |
+| Parameter | Nilai |
+|-----------|-------|
+| Connection Id | `postgres_default` |
+| Connection Type | `Postgres` |
+| Host | `postgres` |
+| Database | `airflow` |
+| Login | `airflow` |
+| Password | `air123` |
+| Port | `5432` |
 
----
+### 6. Aktifkan DAG
 
-## 📊 Contoh Query Analitik
+Di Airflow UI, aktifkan DAG `gdelt_cameo_pipeline`. Pipeline akan berjalan otomatis **setiap 15 menit**.
 
-```sql
--- Top 10 negara yang paling sering muncul sebagai aktor
-SELECT actor1_country, COUNT(*) as event_count
-FROM gdelt.gdelt_events
-WHERE actor1_country IS NOT NULL AND actor1_country != ''
-GROUP BY actor1_country
-ORDER BY event_count DESC
-LIMIT 10;
+### 7. Hentikan Service
 
--- Distribusi Goldstein Scale (tingkat kooperasi vs konflik)
-SELECT
-    CASE
-        WHEN goldstein_scale::FLOAT > 0 THEN 'Kooperatif'
-        WHEN goldstein_scale::FLOAT < 0 THEN 'Konfliktual'
-        ELSE 'Netral'
-    END AS kategori,
-    COUNT(*) as jumlah
-FROM gdelt.gdelt_events
-WHERE goldstein_scale ~ '^-?[0-9.]+$'
-GROUP BY kategori;
-
--- Tren event terbaru dalam 24 jam terakhir
-SELECT sqldate, COUNT(*) as total_events
-FROM gdelt.gdelt_events
-WHERE sqldate >= CURRENT_DATE - INTERVAL '1 day'
-GROUP BY sqldate
-ORDER BY sqldate DESC;
+```bash
+podman-compose down
 ```
 
 ---
 
-## 🚀 Pengembangan Selanjutnya
+## 🔧 Konfigurasi Environment
 
-- [ ] Tambahkan skema `gdelt` yang terpisah di PostgreSQL
-- [ ] Implementasi deduplication berdasarkan `GlobalEventID`
-- [ ] Integrasi tabel referensi kode CAMEO untuk enrichment data
-- [ ] Bangun Grafana dashboard: peta panas konflik global
-- [ ] Tambahkan alerting jika Goldstein Scale memburuk secara signifikan
-- [ ] Migrasi ke distributed storage (e.g., MinIO + Apache Parquet)
-
----
-
-## 👤 Author
-
-**Dinar Rahman**
-- Data Engineer Portfolio Project
-- Fokus: Realtime Data Pipeline, Event-Driven Architecture, Geopolitical Analytics
+| Variabel | Deskripsi | Default |
+|----------|-----------|---------|
+| `POSTGRES_USER` | Username database PostgreSQL | `airflow` |
+| `POSTGRES_PASSWORD` | Password database PostgreSQL | `air123` |
+| `POSTGRES_DB` | Nama database PostgreSQL | `airflow` |
+| `AIRFLOW_UID` | UID untuk Airflow (penting di Linux) | `50000` |
+| `GRAFANA_ADMIN_USER` | Username admin Grafana | `admin` |
+| `GRAFANA_ADMIN_PASSWORD` | Password admin Grafana | `air12345` |
 
 ---
 
-## 📄 Lisensi
+## 🔄 Penjelasan Pipeline
 
-Proyek ini menggunakan lisensi [MIT](LICENSE).
+Pipeline dijalankan oleh **Apache Airflow** dengan dua task utama:
 
-Data bersumber dari **GDELT Project** yang merupakan dataset publik:
-> The GDELT Project is an open platform for research and analysis of global society.
-> Learn more at [gdeltproject.org](https://www.gdeltproject.org/)
+### Task 1: `extract_transform_task`
+
+1. Mengambil URL file CSV terbaru dari GDELT (`lastupdate.txt`)
+2. Mengunduh file ZIP yang berisi data event
+3. Mengekstrak dan membaca CSV dengan Pandas
+4. Memilih 10 kolom esensial dari 60+ kolom yang tersedia:
+
+| Kolom | Deskripsi |
+|-------|-----------|
+| `GlobalEventID` | ID unik event global |
+| `Day` | Tanggal event (dikonversi ke format DATE) |
+| `Actor1Name` | Nama aktor pertama |
+| `Actor1CountryCode` | Kode negara aktor pertama |
+| `Actor2Name` | Nama aktor kedua |
+| `Actor2CountryCode` | Kode negara aktor kedua |
+| `EventBaseCode` | Kode CAMEO event |
+| `GoldsteinScale` | Skala Goldstein (-10 s/d +10) |
+| `NumMentions` | Jumlah penyebutan di media |
+| `SOURCEURL` | URL sumber berita |
+
+5. Menyimpan hasil transformasi sebagai CSV sementara
+
+### Task 2: `load_to_postgres_task`
+
+1. Membaca file CSV sementara dari task sebelumnya (via XCom)
+2. Menggunakan `PostgresHook` untuk koneksi ke database
+3. Memuat data dengan `COPY` command untuk performa optimal
+
+### Orkestrasi
+
+```
+extract_transform_task → load_to_postgres_task
+```
+
+Pipeline dijadwalkan dengan `schedule_interval='*/15 * * * *'` (setiap 15 menit).
+
+---
+
+## 📊 Akses Dashboard
+
+| Service | URL | Username | Password |
+|---------|-----|----------|----------|
+| **Airflow UI** | [http://localhost:8080](http://localhost:8080) | `admin` | `air1234` |
+| **Grafana** | [http://localhost:3000](http://localhost:3000) | `admin` | `air12345` |
+| **PostgreSQL** | `localhost:5432` | `airflow` | `air123` |
+
+### Setup Grafana Data Source
+
+1. Buka Grafana → **Configuration** → **Data Sources**
+2. Pilih **PostgreSQL**
+3. Isi konfigurasi:
+   - **Host**: `postgres:5432`
+   - **Database**: `airflow`
+   - **User**: `airflow`
+   - **Password**: `air123`
+   - **SSL Mode**: `disable`
+4. Klik **Save & Test**
+
+---
+
+## 📸 Screenshot
+
+> *Tambahkan screenshot Airflow DAG, Grafana Dashboard, dan data di PostgreSQL di sini.*
+
+<!--
+![Airflow DAG](docs/screenshots/airflow-dag.png)
+![Grafana Dashboard](docs/screenshots/grafana-dashboard.png)
+![PostgreSQL Data](docs/screenshots/postgres-data.png)
+-->
+
+---
+
+## 💡 Pelajaran yang Dipetik
+
+- **Containerisasi** sangat mempermudah setup infrastruktur data yang kompleks
+- **Apache Airflow** menyediakan mekanisme retry & monitoring yang handal untuk pipeline ETL
+- Penggunaan `COPY` pada PostgreSQL jauh lebih cepat dibanding `INSERT` row-by-row
+- Pentingnya **idempotent pipeline** agar data tidak duplikat saat re-run
+- Pengelolaan **environment variables** dengan `.env` menjaga keamanan kredensial
+
+---
+
+## 📬 Kontak
+
+**Dinar Rahman** — Data Engineer
+
+<!-- Sesuaikan link berikut dengan profil Anda -->
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
+[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:)
+
+---
+
+<p align="center">
+  <i>Dibuat dengan ❤️ sebagai portfolio project Data Engineer</i>
+</p>

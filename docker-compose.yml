@@ -8,6 +8,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
   airflow:
     image: docker.io/apache/airflow:2.7.1
@@ -47,3 +49,5 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
+volumes:
+  pgdata:
