@@ -280,7 +280,10 @@ Pipeline dijadwalkan dengan `schedule_interval='*/15 * * * *'` (setiap 15 menit)
 
 ## 📸 Screenshot
 
-> *Tambahkan screenshot Airflow DAG, Grafana Dashboard, dan data di PostgreSQL di sini.*
+> <img width="2370" height="1111" alt="image" src="https://github.com/user-attachments/assets/8574183b-d5dd-4677-b8d3-4bc0d55c3d63" />
+
+
+Link Grafana: https://snapshots.raintank.io/dashboard/snapshot/f09izpGnSJ1peEWrgPCE37TzXoT2s52Y
 
 <!--
 ![Airflow DAG](docs/screenshots/airflow-dag.png)
