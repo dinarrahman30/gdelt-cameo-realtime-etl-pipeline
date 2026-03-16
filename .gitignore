@@ -1,0 +1,66 @@
+# ==========================================
+# DATA & OUTPUT FILES
+# ==========================================
+# Jangan pernah mengunggah data mentah atau hasil transformasi ke GitHub!
+*.csv
+*.tsv
+*.json
+*.parquet
+temp_gdelt.csv
+data/
+output/
+downloads/
+
+# ==========================================
+# SECRETS & CREDENTIALS
+# ==========================================
+# Kredensial database, kunci API, atau variabel lingkungan
+.env
+.env.*
+secrets/
+credentials.json
+
+# ==========================================
+# APACHE AIRFLOW
+# ==========================================
+# File sistem, log, dan database SQLite lokal bawaan Airflow
+airflow-webserver.pid
+airflow.cfg
+airflow.db
+webserver_config.py
+logs/
+*/logs/
+logs/*
+
+# ==========================================
+# PYTHON ENVIRONMENT
+# ==========================================
+# Virtual environment dan file cache Python
+venv/
+.env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# DOCKER & CONTAINERS
+# ==========================================
+# Jika Anda melakukan build image lokal atau menyimpan volume lokal
+.docker/
+docker-volume/
+pgdata/
+grafana-data/
+
+# ==========================================
+# OS & IDE FILES
+# ==========================================
+# File sampah dari sistem operasi (Mac/Linux/Windows) dan editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

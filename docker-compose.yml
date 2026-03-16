@@ -1,0 +1,49 @@
+version: '3'
+services:
+  postgres:
+    image: docker.io/library/postgres:13
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+
+  airflow:
+    image: docker.io/apache/airflow:2.7.1
+    user: "${AIRFLOW_UID}:0"
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__TEST_CONNECTION=Enabled
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas requests
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+        echo 'Waiting for PostgreSQL...' &&
+        while ! python -c 'import socket; s=socket.create_connection((\"postgres\", 5432), timeout=2); s.close()' 2>/dev/null; do
+          sleep 2;
+        done &&
+        echo 'PostgreSQL is ready!' &&
+        airflow db init &&
+        (airflow users create --username admin --password air1234 --firstname Admin --lastname User --role Admin --email admin@example.com || true) &&
+        airflow webserver & airflow scheduler
+      "
+
+  grafana:
+    image: docker.io/grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
