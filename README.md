@@ -52,8 +52,8 @@ Proyek ini mendemonstrasikan kemampuan seorang **Data Engineer** dalam:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   GDELT API     │────▶│  Apache Airflow  │────▶│   PostgreSQL    │────▶│    Grafana       │
-│   (Data Source) │     │  (Orchestrator)  │     │  (Data Warehouse)│    │  (Visualization) │
+│   GDELT API     │────▶│  Apache Airflow │────▶│   PostgreSQL    │────▶│    Grafana      │
+│   (Data Source) │     │  (Orchestrator) │     │ (Data Warehouse)│     │  (Visualization)│
 └─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
         │                       │                       │                       │
    Data mentah            Extract &               Penyimpanan            Dashboard
