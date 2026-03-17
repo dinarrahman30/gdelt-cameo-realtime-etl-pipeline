@@ -131,17 +131,17 @@ Buat file `.env` di root proyek:
 ```env
 # PostgreSQL
 POSTGRES_USER=airflow
-POSTGRES_PASSWORD=air123
+POSTGRES_PASSWORD= (sesuaikan)
 POSTGRES_DB=airflow
 
 # Airflow
 AIRFLOW_ADMIN_USERNAME=admin
-AIRFLOW_ADMIN_PASSWORD=air1234
+AIRFLOW_ADMIN_PASSWORD=(sesuaikan)
 AIRFLOW_UID=50000
 
 # Grafana
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=air12345
+GRAFANA_ADMIN_PASSWORD=(sesuaikan)
 ```
 
 ### 3. Jalankan Semua Service
@@ -186,7 +186,7 @@ Buka Airflow UI di `http://localhost:8080`, lalu tambahkan connection PostgreSQL
 | Host | `postgres` |
 | Database | `airflow` |
 | Login | `airflow` |
-| Password | `air123` |
+| Password | `(sesuaikan)` |
 | Port | `5432` |
 
 ### 6. Aktifkan DAG
@@ -206,11 +206,11 @@ podman-compose down
 | Variabel | Deskripsi | Default |
 |----------|-----------|---------|
 | `POSTGRES_USER` | Username database PostgreSQL | `airflow` |
-| `POSTGRES_PASSWORD` | Password database PostgreSQL | `air123` |
+| `POSTGRES_PASSWORD` | Password database PostgreSQL | `(sesuaikan)` |
 | `POSTGRES_DB` | Nama database PostgreSQL | `airflow` |
 | `AIRFLOW_UID` | UID untuk Airflow (penting di Linux) | `50000` |
 | `GRAFANA_ADMIN_USER` | Username admin Grafana | `admin` |
-| `GRAFANA_ADMIN_PASSWORD` | Password admin Grafana | `air12345` |
+| `GRAFANA_ADMIN_PASSWORD` | Password admin Grafana | `(sesuaikan)` |
 
 ---
 
@@ -260,9 +260,9 @@ Pipeline dijadwalkan dengan `schedule_interval='*/15 * * * *'` (setiap 15 menit)
 
 | Service | URL | Username | Password |
 |---------|-----|----------|----------|
-| **Airflow UI** | [http://localhost:8080](http://localhost:8080) | `admin` | `air1234` |
-| **Grafana** | [http://localhost:3000](http://localhost:3000) | `admin` | `air12345` |
-| **PostgreSQL** | `localhost:5432` | `airflow` | `air123` |
+| **Airflow UI** | [http://localhost:8080](http://localhost:8080) | `admin` | `(sesuaikan)` |
+| **Grafana** | [http://localhost:3000](http://localhost:3000) | `admin` | `(sesuaikan)` |
+| **PostgreSQL** | `localhost:5432` | `airflow` | `(sesuaikan)` |
 
 ### Setup Grafana Data Source
 
@@ -272,7 +272,7 @@ Pipeline dijadwalkan dengan `schedule_interval='*/15 * * * *'` (setiap 15 menit)
    - **Host**: `postgres:5432`
    - **Database**: `airflow`
    - **User**: `airflow`
-   - **Password**: `air123`
+   - **Password**: `(sesuaikan)`
    - **SSL Mode**: `disable`
 4. Klik **Save & Test**
 
