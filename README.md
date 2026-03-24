@@ -293,16 +293,6 @@ Link Grafana: https://snapshots.raintank.io/dashboard/snapshot/f09izpGnSJ1peEWrg
 
 ---
 
-## 💡 Pelajaran yang Dipetik
-
-- **Containerisasi** sangat mempermudah setup infrastruktur data yang kompleks
-- **Apache Airflow** menyediakan mekanisme retry & monitoring yang handal untuk pipeline ETL
-- Penggunaan `COPY` pada PostgreSQL jauh lebih cepat dibanding `INSERT` row-by-row
-- Pentingnya **idempotent pipeline** agar data tidak duplikat saat re-run
-- Pengelolaan **environment variables** dengan `.env` menjaga keamanan kredensial
-
----
-
 ## 📬 Kontak
 
 **Dinar Rahman** — Data Engineer
